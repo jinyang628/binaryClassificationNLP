@@ -60,7 +60,8 @@ num_unique_words = len(counter)
 
 # Split the dataset into training and validation sets
 # 20% used for testing with 42 being the seed value for randomisation
-train_df, val_df = train_test_split(df, test_size=0.2, random_state=42)
+training_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
+train_df, val_df = train_test_split(training_df, test_size=0.2, random_state=42)
 
 # split text and labels
 train_sentences = train_df.text.to_numpy()
@@ -119,6 +120,7 @@ model.compile(loss=loss, optimizer=optim, metrics=metrics)
 
 model.fit(train_padded, train_labels, epochs=5, validation_data=(val_padded, val_labels), verbose=2)
 
+#outdated, use the test one instead this is wrong understanding 
 predictions = model.predict(val_padded)
 predictions= [1 if p > 0.5 else 0 for p in predictions]
 
