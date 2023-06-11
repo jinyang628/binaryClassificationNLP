@@ -145,8 +145,11 @@ model.add(Embedding(num_unique_words, 32, input_length=max_length))
 model.add(LSTM(64, dropout=0.1))
 """
 Dense layer is often used as the output layer for binary classification tasks since it can provide a probability score between 0 and 1
+
 The number 1 indicates we are only outputting a single value
+
 activation="sigmoid" parameter applies the sigmoid activation function, which squashes the output to a probability range, indicating the likelihood of the binary class (0 or 1) for the given input
+    - Use sigmoid for binary classification problems
 """
 model.add(Dense(1, activation="sigmoid"))
 model.summary()
