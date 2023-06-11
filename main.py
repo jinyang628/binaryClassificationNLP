@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import time
 from keras.layers import Input, Embedding, LSTM, Dense
 from keras.models import Model
+from nltk import WordNetLemmatizer
 from tensorflow import keras
 from keras.preprocessing.text import Tokenizer
 from keras.utils import pad_sequences
@@ -14,6 +15,10 @@ import re
 import string
 import nltk
 from collections import Counter
+from textblob import TextBlob
+import contractions
+
+
 
 """
 Stop Words: A stop word is a commonly used word (such as "the", "a", "an", "in") that a search engine
@@ -27,7 +32,7 @@ stop = set(stopwords.words("english"))
 df = pd.read_csv("dataset.csv")
 # print(df.shape)
 # print(df.head())
-# target == 1 means disaster tweet and vice versa
+#target == 1 means disaster tweet and vice versa
 # print((df.target == 1).sum())
 # print((df.target == 0).sum())
 
@@ -39,11 +44,41 @@ def remove_punct(text):
     translator = str.maketrans("", "", string.punctuation)
     return text.translate(translator)
 
+def lower_case(text):
+    lower_case_words = [word.lower() for word in text.split()]
+    return " ".join(lower_case_words)
+
+def remove_contraction(text):
+    return contractions.fix(text)
+
 def remove_stopwords(text):
-    filtered_words = [word.lower() for word in text.split() if word.lower() not in stop]
+    filtered_words = [word for word in text.split() if word not in stop]
     return " ".join(filtered_words)
 
-# returns a dictionary where key is each unique word and value is the frequency count
+def remove_emoji(string):
+    emoji_pattern = re.compile("["
+                           u"U0001F600-U0001F64F"  # emoticons
+                           u"U0001F300-U0001F5FF"  # symbols & pictographs
+                           u"U0001F680-U0001F6FF"  # transport & map symbols
+                           u"U0001F1E0-U0001F1FF"  # flags (iOS)
+                           u"U00002702-U000027B0"
+                           u"U000024C2-U0001F251"
+                           "]+", flags=re.UNICODE)
+    return emoji_pattern.sub(r'', string)
+
+# Computationally Intensive
+def spell_check(text):
+    blob = TextBlob(text)
+    corrected_text = blob.correct()
+    return str(corrected_text)
+
+# Computationally Intensive
+def lemmatize_text(text):
+    lemmatizer = WordNetLemmatizer()
+    lemmatized_words = [lemmatizer.lemmatize(word) for word in text.split()]
+    return " ".join(lemmatized_words)
+
+  # returns a dictionary where key is each unique word and value is the frequency count
 def counter_word(text_col):
     count = Counter()
     for text in text_col.values:
@@ -52,14 +87,15 @@ def counter_word(text_col):
     return count
 
 
-df["text"] = df.text.map(remove_URL)
-df["text"] = df.text.map(remove_punct)
-df["text"] = df.text.map(remove_stopwords)
+# Computationally intensive
+# df["text"] = df.text.map(remove_URL).map(lower_case).map(remove_punct).map(spell_check).map(lemmatize_text).map(remove_contraction).map(remove_stopwords).map(remove_emoji)
+
+df["text"] = df.text.map(remove_URL).map(lower_case).map(remove_punct).map(remove_contraction).map(remove_stopwords).map(remove_emoji)
+
 counter = counter_word(df.text)
 num_unique_words = len(counter)
 
-# Split the dataset into training and validation sets
-# 20% used for testing with 42 being the seed value for randomisation
+# Split the dataset into training, validation and test sets
 training_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
 train_df, val_df = train_test_split(training_df, test_size=0.2, random_state=42)
 
@@ -68,6 +104,8 @@ train_sentences = train_df.text.to_numpy()
 train_labels = train_df.target.to_numpy()
 val_sentences = val_df.text.to_numpy()
 val_labels = val_df.target.to_numpy()
+test_sentences = test_df.text.to_numpy()
+test_labels = test_df.target.to_numpy()
 
 tokenizer = Tokenizer(num_words=(num_unique_words + 1), oov_token="<OOV>")
 tokenizer.fit_on_texts(train_sentences)
@@ -76,11 +114,14 @@ word_index = tokenizer.word_index
 
 train_sequences = tokenizer.texts_to_sequences(train_sentences)
 val_sequences = tokenizer.texts_to_sequences(val_sentences)
+test_sequences = tokenizer.texts_to_sequences(test_sentences)
+
 
 max_length = max(max(len(seq) for seq in train_sequences),
                  max(len(seq) for seq in val_sequences))
 train_padded = pad_sequences(train_sequences, maxlen=max_length, padding='post')
 val_padded = pad_sequences(val_sequences, maxlen=max_length, padding='post')
+test_padded = pad_sequences(test_sequences, maxlen=max_length, padding='post', truncating='post')
 
 # takes in the token sequence and returns the original sentence
 reverse_word_index = dict([(idx, word) for (word, idx) in word_index.items()])
@@ -88,8 +129,8 @@ def decode(sequence):
     return " ".join([reverse_word_index.get(idx, "?") for idx in sequence])
 
 # If same output, everything is right so far
-# print(decode(train_sequences[10]))
-# print(train_sentences[10])
+print(decode(train_sequences[10]))
+print(train_sentences[10])
 
 model = keras.models.Sequential()
 
@@ -118,28 +159,26 @@ metrics=["accuracy"]
 
 model.compile(loss=loss, optimizer=optim, metrics=metrics)
 
-model.fit(train_padded, train_labels, epochs=5, validation_data=(val_padded, val_labels), verbose=2)
+model.fit(train_padded, train_labels, epochs=9, validation_data=(val_padded, val_labels), verbose=2)
 
-#outdated, use the test one instead this is wrong understanding 
-predictions = model.predict(val_padded)
+predictions = model.predict(test_padded)
 predictions= [1 if p > 0.5 else 0 for p in predictions]
 
-# print(val_sentences[10:20])
-# print(val_labels[10:20])
-# print(predictions[10:20])
+print(val_sentences[10:20])
+print(val_labels[10:20])
+print(predictions[10:20])
 
 # Customised input
 
 def preprocess_input(text):
-    text = remove_URL(text)
-    text = remove_punct(text)
-    text = remove_stopwords(text)
-    return text
+    # Computationally intensive
+    # return remove_emoji(remove_stopwords(remove_contraction(lemmatize_text(spell_check(remove_punct(lower_case(remove_URL(text))))))))
+    return remove_emoji(remove_stopwords(remove_contraction(remove_punct(lower_case(remove_URL(text))))))
 
 def predict_input(text):
     preprocessed_text = preprocess_input(text)
     sequence = tokenizer.texts_to_sequences([preprocessed_text])
-    padded_sequence = pad_sequences(sequence, maxlen=max_length, padding='post')
+    padded_sequence = pad_sequences(sequence, maxlen=max_length, padding='post', truncating='post')
     prediction = model.predict(padded_sequence)[0]
     if prediction > 0.5:
         return "Disaster"
