@@ -143,8 +143,11 @@ A dense layer, also known as a fully connected layer, is a neural network layer 
 model.add(Embedding(num_unique_words, 32, input_length=max_length))
 # dropout parameter of 0.1 specifies that a fraction of the input units (10%) will be randomly set to 0 during training to prevent overfitting.
 model.add(LSTM(64, dropout=0.1))
-# dense layer is often used as the output layer for binary classification tasks since it can provide a probability score between 0 and 1
-# activation="sigmoid" parameter applies the sigmoid activation function, which squashes the output to a probability range, indicating the likelihood of the binary class (0 or 1) for the given input
+"""
+Dense layer is often used as the output layer for binary classification tasks since it can provide a probability score between 0 and 1
+The number 1 indicates we are only outputting a single value
+activation="sigmoid" parameter applies the sigmoid activation function, which squashes the output to a probability range, indicating the likelihood of the binary class (0 or 1) for the given input
+"""
 model.add(Dense(1, activation="sigmoid"))
 model.summary()
 
@@ -152,7 +155,16 @@ model.summary()
 # from_logits=False because we had an activation function above, so our output from the final layer is already in probabilities and not logits
 loss = keras.losses.BinaryCrossentropy(from_logits=False)
 
-# learning rate is set to relatively low value of 0.001 so there is slower convergence (state where an algorithm has reached an "optimal" solution)
+"""
+Optimizers update the model in resposne to the output of the loss function to minimize the loss function
+    - High learning rate trains the model faster but it is difficult to get to the true minimum because we are taking BIG steps (vice versa)
+    - Low learning rate has the problem of settling in the local (instead of global) minimum because we are not taking large enough steps to explore outside the "valley"
+
+Adam (Adaptive Moment Estimation) optimiser
+    - Little memory requirements so suited for problems with large dataset/parameters
+    - Appropriate for problems with very noisy/sparse gradients
+    - Hyper-parameters typically require little tuning (e.g. most models use learning_rate = 0.001)
+"""
 optim = keras.optimizers.Adam(learning_rate=0.001)
 
 metrics=["accuracy"]
