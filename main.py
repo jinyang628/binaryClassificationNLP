@@ -181,6 +181,8 @@ Although ReLU seems to be the best activation function, it should only be used i
     - The number of neurons in the output layer is often fixed, while the number of neurons in the hidden layer can vary (depending on the size of 
       the input data). This makes it difficult to apply ReLU to the output layer without first flattening it into a one-dimensional vector (which 
       would lose all information about the original structure of the data).
+
+In the case of the output layer for binary classification, sigmoid is still the best activation function. 
 """
 model.add(Dense(1, activation="sigmoid"))
 model.summary()
