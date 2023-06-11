@@ -117,10 +117,10 @@ val_sequences = tokenizer.texts_to_sequences(val_sentences)
 test_sequences = tokenizer.texts_to_sequences(test_sentences)
 
 
-max_length = max(max(len(seq) for seq in train_sequences),
-                 max(len(seq) for seq in val_sequences))
+max_length = max(len(seq) for seq in train_sequences))
+
 train_padded = pad_sequences(train_sequences, maxlen=max_length, padding='post')
-val_padded = pad_sequences(val_sequences, maxlen=max_length, padding='post')
+val_padded = pad_sequences(val_sequences, maxlen=max_length, padding='post', truncating='post')
 test_padded = pad_sequences(test_sequences, maxlen=max_length, padding='post', truncating='post')
 
 # takes in the token sequence and returns the original sentence
