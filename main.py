@@ -107,7 +107,7 @@ val_labels = val_df.target.to_numpy()
 test_sentences = test_df.text.to_numpy()
 test_labels = test_df.target.to_numpy()
 
-tokenizer = Tokenizer(num_words=(num_unique_words + 1), oov_token="<OOV>")
+tokenizer = Tokenizer(num_words=num_unique_words, oov_token="<OOV>")
 tokenizer.fit_on_texts(train_sentences)
 
 word_index = tokenizer.word_index
