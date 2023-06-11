@@ -4,7 +4,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import time
-from keras.layers import Input, Embedding, LSTM, Dense
+from keras.layers import Input, Embedding, LSTM, Dense, LeakyReLU
 from keras.models import Model
 from nltk import WordNetLemmatizer
 from tensorflow import keras
@@ -141,13 +141,16 @@ A dense layer, also known as a fully connected layer, is a neural network layer 
 """
 
 model.add(Embedding(num_unique_words, 32, input_length=max_length))
-# dropout parameter of 0.1 specifies that a fraction of the input units (10%) will be randomly set to 0 during training to prevent overfitting.
-model.add(LSTM(64, dropout=0.1))
 """
-Dense layer is often used as the output layer for binary classification tasks since it can provide a probability score between 0 and 1
+Dropout parameter of 0.1 specifies that a fraction of the input units (10%) will be randomly set to 0 during training to prevent overfitting.
 
-The number 1 indicates we are only outputting a single value
+Recurrent Dropout has a similar goal but is applied on recurrent connections (connections that carry the hidden state information across time steps in the sequence)
+within the LSTM layer instead
 
+return_sequences=True is only necessary if we are stacking multiple LSTM layers OR connecting other recurrent layers after the LSTM layer.
+"""
+model.add(LSTM(64, dropout=0.1, recurrent_dropout=0.1, return_sequences=True))
+"""
 Gradients in ML models refer to the gradients of the loss function with respect to the weights in the neural network. Gradients are calculated
 using backpropagation, where the derivatives of each layer are multiplied from the FINAL layer to the INITIAL layer. These gradients are used 
 to update the weights in our network, with the goal of finding the most optimal weight for each connection that will minimise the total loss of 
@@ -171,7 +174,7 @@ Possible activation functions
         - Dead neuron problem
             - When most of the inputs are negative, many ReLU neurons only ouput values of 0. Gradients fail to flow during backpropagation and a
               large part of the network's weights are not updated/become inactive/unable to learn further.
-    - 'Leaky ReLU' introduces a small slope when inputs are negative to keep the network alive
+    - 'Leaky ReLU' introduces a small slope when inputs are negative to keep the network alive (alpha parameter determines gradient of slope)
     - 'Maxout' is a generalised form of ReLU and Leaky ReLU
         - Doubles the parameters of each neuron so more computationally expensive
         
@@ -183,6 +186,11 @@ Although ReLU seems to be the best activation function, it should only be used i
       would lose all information about the original structure of the data).
 
 In the case of the output layer for binary classification, sigmoid is still the best activation function. 
+"""
+model.add(LeakyReLU(alpha=0.2))
+"""
+Dense layer is often used as the output layer for binary classification tasks since it can provide a probability score between 0 and 1
+The number 1 indicates we are only outputting a single value
 """
 model.add(Dense(1, activation="sigmoid"))
 model.summary()
@@ -214,7 +222,7 @@ Larger batch sizes train faster but converge slower (and vice versa)
 
 Batch size of 32 or 64 is a good starting point
 """
-model.fit(train_padded, train_labels, epochs=9, batch_size = 32, validation_data=(val_padded, val_labels), verbose=2)
+model.fit(train_padded, train_labels, epochs=2, batch_size = 32, validation_data=(val_padded, val_labels), verbose=2)
 
 predictions = model.predict(test_padded)
 predictions= [1 if p > 0.5 else 0 for p in predictions]
