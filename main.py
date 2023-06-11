@@ -160,7 +160,7 @@ loss = keras.losses.BinaryCrossentropy(from_logits=False)
 
 """
 Optimizers update the model in resposne to the output of the loss function to minimize the loss function
-    - High learning rate trains the model faster but it is difficult to get to the true minimum because we are taking BIG steps (vice versa)
+    - High learning rate trains the model faster but it is difficult to get to the true minimum because each step in gradient descent is BIGGER (vice versa)
     - Low learning rate has the problem of settling in the local (instead of global) minimum because we are not taking large enough steps to explore outside the "valley"
 
 Adam (Adaptive Moment Estimation) optimiser
@@ -174,13 +174,20 @@ metrics=["accuracy"]
 
 model.compile(loss=loss, optimizer=optim, metrics=metrics)
 
-model.fit(train_padded, train_labels, epochs=9, validation_data=(val_padded, val_labels), verbose=2)
+"""
+Batch size defines the number of samples that will be propagated through the network before updating the model parameters
+
+Larger batch sizes train faster but converge slower (and vice versa)
+
+Batch size of 32 or 64 is a good starting point
+"""
+model.fit(train_padded, train_labels, epochs=9, batch_size = 32, validation_data=(val_padded, val_labels), verbose=2)
 
 predictions = model.predict(test_padded)
 predictions= [1 if p > 0.5 else 0 for p in predictions]
 
-print(val_sentences[10:20])
-print(val_labels[10:20])
+print(test_sentences[10:20])
+print(test_labels[10:20])
 print(predictions[10:20])
 
 # Customised input
