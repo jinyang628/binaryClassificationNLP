@@ -148,8 +148,39 @@ Dense layer is often used as the output layer for binary classification tasks si
 
 The number 1 indicates we are only outputting a single value
 
-activation="sigmoid" parameter applies the sigmoid activation function, which squashes the output to a probability range, indicating the likelihood of the binary class (0 or 1) for the given input
-    - Use sigmoid for binary classification problems
+Gradients in ML models refer to the gradients of the loss function with respect to the weights in the neural network. Gradients are calculated
+using backpropagation, where the derivatives of each layer are multiplied from the FINAL layer to the INITIAL layer. These gradients are used 
+to update the weights in our network, with the goal of finding the most optimal weight for each connection that will minimise the total loss of 
+the network.
+
+Possible activation functions
+    - 'Sigmoid' squishes its input into a value between 0 and 1
+        - Vanishing gradient problem
+            - When the inputs of the sigmoid function becomes larger or smaller, the derivative of the curve tends to 0. For shallow 
+              networks with only a few layers that use these activations, this isn't a big problem. But when more layers are used, 
+              the gradients (after multiplication) decrease exponentially and become too small for weights/biases in the INITIAL
+              layers to be updated effectively with each epoch. Since these initial layers are often crucial to recognizing the core 
+              elements of the input data, it can lead to overall inaccuracy of the whole network. 
+        - Sigmoid outputs are not zero-centered
+            - Neurons in the LATER layers would be receiving data that is not zero-centered. If the data coming into a neuron is always positive, 
+              then the gradient on the weights during backpropagation become either all positive or all negative. This introduces zig-zagging 
+              dynamics in the gradient updates for the weights, which causes slow convergence
+    - 'Hyperbolic Tangent Function' squishes its input into a value between -1 and 1
+        - Vanishing gradient problem
+    - 'Rectified Linear Unit' (ReLU) transforms negative inputs into 0 and does not alter positive inputs 
+        - Dead neuron problem
+            - When most of the inputs are negative, many ReLU neurons only ouput values of 0. Gradients fail to flow during backpropagation and a
+              large part of the network's weights are not updated/become inactive/unable to learn further.
+    - 'Leaky ReLU' introduces a small slope when inputs are negative to keep the network alive
+    - 'Maxout' is a generalised form of ReLU and Leaky ReLU
+        - Doubles the parameters of each neuron so more computationally expensive
+        
+Although ReLU seems to be the best activation function, it should only be used in hidden layers 
+    - Output layer activations should be close to linear, whereas hidden layer activations can be much more non-linear. ReLU is ideally suited for 
+      non-linear activations.
+    - The number of neurons in the output layer is often fixed, while the number of neurons in the hidden layer can vary (depending on the size of 
+      the input data). This makes it difficult to apply ReLU to the output layer without first flattening it into a one-dimensional vector (which 
+      would lose all information about the original structure of the data).
 """
 model.add(Dense(1, activation="sigmoid"))
 model.summary()
