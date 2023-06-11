@@ -18,8 +18,6 @@ from collections import Counter
 from textblob import TextBlob
 import contractions
 
-
-
 """
 Stop Words: A stop word is a commonly used word (such as "the", "a", "an", "in") that a search engine
 has been programmed to ignore, both when indexing entries for searching and when retrieving them as 
@@ -27,12 +25,15 @@ the result of a search query.
 """
 nltk.download('stopwords')
 from nltk.corpus import stopwords
+
 stop = set(stopwords.words("english"))
 
 df = pd.read_csv("dataset.csv")
+
+
 # print(df.shape)
 # print(df.head())
-#target == 1 means disaster tweet and vice versa
+# target == 1 means disaster tweet and vice versa
 # print((df.target == 1).sum())
 # print((df.target == 0).sum())
 
@@ -40,31 +41,37 @@ def remove_URL(text):
     url = re.compile(r"https?://\S+|www\.\S+")
     return url.sub(r"", text)
 
+
 def remove_punct(text):
     translator = str.maketrans("", "", string.punctuation)
     return text.translate(translator)
+
 
 def lower_case(text):
     lower_case_words = [word.lower() for word in text.split()]
     return " ".join(lower_case_words)
 
+
 def remove_contraction(text):
     return contractions.fix(text)
+
 
 def remove_stopwords(text):
     filtered_words = [word for word in text.split() if word not in stop]
     return " ".join(filtered_words)
 
+
 def remove_emoji(string):
     emoji_pattern = re.compile("["
-                           u"U0001F600-U0001F64F"  # emoticons
-                           u"U0001F300-U0001F5FF"  # symbols & pictographs
-                           u"U0001F680-U0001F6FF"  # transport & map symbols
-                           u"U0001F1E0-U0001F1FF"  # flags (iOS)
-                           u"U00002702-U000027B0"
-                           u"U000024C2-U0001F251"
-                           "]+", flags=re.UNICODE)
+                               u"U0001F600-U0001F64F"  # emoticons
+                               u"U0001F300-U0001F5FF"  # symbols & pictographs
+                               u"U0001F680-U0001F6FF"  # transport & map symbols
+                               u"U0001F1E0-U0001F1FF"  # flags (iOS)
+                               u"U00002702-U000027B0"
+                               u"U000024C2-U0001F251"
+                               "]+", flags=re.UNICODE)
     return emoji_pattern.sub(r'', string)
+
 
 # Computationally Intensive
 def spell_check(text):
@@ -72,13 +79,15 @@ def spell_check(text):
     corrected_text = blob.correct()
     return str(corrected_text)
 
+
 # Computationally Intensive
 def lemmatize_text(text):
     lemmatizer = WordNetLemmatizer()
     lemmatized_words = [lemmatizer.lemmatize(word) for word in text.split()]
     return " ".join(lemmatized_words)
 
-  # returns a dictionary where key is each unique word and value is the frequency count
+
+# returns a dictionary where key is each unique word and value is the frequency count
 def counter_word(text_col):
     count = Counter()
     for text in text_col.values:
@@ -90,7 +99,8 @@ def counter_word(text_col):
 # Computationally intensive
 # df["text"] = df.text.map(remove_URL).map(lower_case).map(remove_punct).map(spell_check).map(lemmatize_text).map(remove_contraction).map(remove_stopwords).map(remove_emoji)
 
-df["text"] = df.text.map(remove_URL).map(lower_case).map(remove_punct).map(remove_contraction).map(remove_stopwords).map(remove_emoji)
+df["text"] = df.text.map(remove_URL).map(lower_case).map(remove_punct).map(remove_contraction).map(
+    remove_stopwords).map(remove_emoji)
 
 counter = counter_word(df.text)
 num_unique_words = len(counter)
@@ -116,7 +126,6 @@ train_sequences = tokenizer.texts_to_sequences(train_sentences)
 val_sequences = tokenizer.texts_to_sequences(val_sentences)
 test_sequences = tokenizer.texts_to_sequences(test_sentences)
 
-
 max_length = max(len(seq) for seq in train_sequences)
 
 train_padded = pad_sequences(train_sequences, maxlen=max_length, padding='post')
@@ -125,8 +134,11 @@ test_padded = pad_sequences(test_sequences, maxlen=max_length, padding='post', t
 
 # takes in the token sequence and returns the original sentence
 reverse_word_index = dict([(idx, word) for (word, idx) in word_index.items()])
+
+
 def decode(sequence):
     return " ".join([reverse_word_index.get(idx, "?") for idx in sequence])
+
 
 # If same output, everything is right so far
 print(decode(train_sequences[10]))
@@ -149,7 +161,7 @@ within the LSTM layer instead
 
 return_sequences=True is only necessary if we are stacking multiple LSTM layers OR connecting other recurrent layers after the LSTM layer.
 """
-model.add(LSTM(64, dropout=0.1, recurrent_dropout=0.1, return_sequences=True))
+model.add(LSTM(64, dropout=0.1, recurrent_dropout=0.1))
 """
 Gradients in ML models refer to the gradients of the loss function with respect to the weights in the neural network. Gradients are calculated
 using backpropagation, where the derivatives of each layer are multiplied from the FINAL layer to the INITIAL layer. These gradients are used 
@@ -177,7 +189,7 @@ Possible activation functions
     - 'Leaky ReLU' introduces a small slope when inputs are negative to keep the network alive (alpha parameter determines gradient of slope)
     - 'Maxout' is a generalised form of ReLU and Leaky ReLU
         - Doubles the parameters of each neuron so more computationally expensive
-        
+
 Although ReLU seems to be the best activation function, it should only be used in hidden layers 
     - Output layer activations should be close to linear, whereas hidden layer activations can be much more non-linear. ReLU is ideally suited for 
       non-linear activations.
@@ -186,9 +198,7 @@ Although ReLU seems to be the best activation function, it should only be used i
       would lose all information about the original structure of the data).
 
 In the case of the output layer for binary classification, sigmoid is still the best activation function. 
-"""
-model.add(LeakyReLU(alpha=0.2))
-"""
+
 Dense layer is often used as the output layer for binary classification tasks since it can provide a probability score between 0 and 1
 The number 1 indicates we are only outputting a single value
 """
@@ -211,7 +221,7 @@ Adam (Adaptive Moment Estimation) optimiser
 """
 optim = keras.optimizers.Adam(learning_rate=0.001)
 
-metrics=["accuracy"]
+metrics = ["accuracy"]
 
 model.compile(loss=loss, optimizer=optim, metrics=metrics)
 
@@ -222,14 +232,15 @@ Larger batch sizes train faster but converge slower (and vice versa)
 
 Batch size of 32 or 64 is a good starting point
 """
-model.fit(train_padded, train_labels, epochs=2, batch_size = 32, validation_data=(val_padded, val_labels), verbose=2)
+model.fit(train_padded, train_labels, epochs=5, batch_size=32, validation_data=(val_padded, val_labels), verbose=2)
 
 predictions = model.predict(test_padded)
-predictions= [1 if p > 0.5 else 0 for p in predictions]
+predictions = [1 if p > 0.5 else 0 for p in predictions]
 
 print(test_sentences[10:20])
 print(test_labels[10:20])
 print(predictions[10:20])
+
 
 # Customised input
 
@@ -237,6 +248,7 @@ def preprocess_input(text):
     # Computationally intensive
     # return remove_emoji(remove_stopwords(remove_contraction(lemmatize_text(spell_check(remove_punct(lower_case(remove_URL(text))))))))
     return remove_emoji(remove_stopwords(remove_contraction(remove_punct(lower_case(remove_URL(text))))))
+
 
 def predict_input(text):
     preprocessed_text = preprocess_input(text)
@@ -248,6 +260,7 @@ def predict_input(text):
     else:
         return "Non-Disaster"
 
-input_text = "There is a fire in the building!" # Change this
+
+input_text = "There is a fire in the building!"  # Change this
 prediction = predict_input(input_text)
 print("Prediction:", prediction)
